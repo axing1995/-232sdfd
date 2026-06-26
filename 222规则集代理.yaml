@@ -1,0 +1,182 @@
+# ==========================================
+# Clash 配置 - TPROXY 模式，彻底杜绝 TCP 直连
+# 修复 DNS 直连问题，UDP 走订阅节点（默认）
+# 修复 client-fingerprint 错误
+# 用于 Box for Root (Mihomo 内核)
+# ==========================================
+
+mixed-port: 7890
+tproxy-port: 9898
+ipv6: true
+allow-lan: true
+unified-delay: true
+tcp-concurrent: true
+external-controller: 127.0.0.1:9090
+external-ui: ui
+external-ui-url: "https://ghfast.top/https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip"
+
+find-process-mode: strict
+# global-client-fingerprint 已删除，改为在节点/订阅中单独设置
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+sniffer:
+  enable: true
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]
+      override-destination: true
+    TLS:
+      ports: [443, 8443]
+    QUIC:
+      ports: [443, 8443]
+  skip-domain: ["Mijia Cloud", "+.push.apple.com"]
+
+dns:
+  enable: true
+  ipv6: true
+  respect-rules: true
+  enhanced-mode: fake-ip
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "+.stun.*"
+    - "+.stun.*.*"
+    - "+.stun*.*"
+    - "+.stun.*.*.*"
+    - "+.time.*"
+    - "+.ntp.*"
+    - "+.msftconnecttest.com"
+    - "+.msftncsi.com"
+    - "+.market.xiaomi.com"
+    - "+.srv.nintendo.net"
+    - "+.local"
+    - "+.xboxlive.com"
+    - "+.battlenet.com.cn"
+    - "+.battlenet.com"
+    - "+.blzstatic.cn"
+    - "+.battle.net"
+    - "+.wotgame.cn"
+    - "+.wggames.cn"
+    - "+.wowsgame.cn"
+    - "+.wargaming.net"
+    - "+.steamcontent.com"
+    - "+.steamserver.net"
+    - "+.steam-chat.com"
+    - "+.steamgames.com"
+    - "+.steampowered.com"
+    - "+.steamstatic.com"
+    - "+.steamcommunity.com"
+    - "+.steam-api.com"
+    - "+.steamusercontent.com"
+  nameserver:
+    - "https://120.53.53.53/dns-query"
+    - "https://223.5.5.5/dns-query"
+  proxy-server-nameserver:
+    - "https://120.53.53.53/dns-query"
+    - "https://223.5.5.5/dns-query"
+  nameserver-policy:
+    "rule-set:cn_domain,private_domain": ["https://120.53.53.53/dns-query", "https://223.5.5.5/dns-query"]
+    "rule-set:geolocation-!cn": ["https://dns.cloudflare.com/dns-query", "https://dns.google/dns-query"]
+
+# 锚点定义
+dy: &kun {type: http, interval: 86400, proxy: 百度直连, health-check: {enable: true, url: https://www.gstatic.com/generate_204, interval: 18000, lazy: true}, override: {skip-cert-verify: true, dialer-proxy: "百度直连", additional-prefix: "✈ "}}
+ikun: &id24407 {type: http, port: 443}
+cf: &ikun {dialer-proxy: "百度直连"}
+bd: &baidu {type: select, proxies: [彦祖分享-苏州联通, 彦祖分享-南京联通, 彦祖分享-保定联通, 彦祖分享-域名随缘, 彦祖分享-南京电信, 彦祖分享-江苏电信, 彦祖分享-北京电信, 彦祖分享-广州电信, 彦祖分享-广州移动, 彦祖分享-南京移动]}
+
+# 订阅提供者
+proxy-providers:
+  my_sub:
+    type: http
+    url: "https://axing-e5x.pages.dev/sub?token=9435eab1c9979ebe4836682ef38098dd&clash"
+    interval: 86400
+    health-check: {enable: true, url: https://www.gstatic.com/generate_204, interval: 18000, lazy: true}
+    override:
+      dialer-proxy: "百度直连"
+      skip-cert-verify: true
+      client-fingerprint: chrome   # 解决错误
+
+# 代理节点
+proxies:
+  - {name: 流量拦截, type: reject}
+  - {name: 流量直连, type: direct, udp: true}
+  
+  - {name: 🇨🇳 彦祖自费, server: udp.singbox.ggff.net, port: 50002, client-fingerprint: chrome, type: vmess, uuid: 418048af-a293-4b99-9b0c-98ca3580dd24, alterId: 64, cipher: auto, tls: false, tfo: false, skip-cert-verify: false, udp: true, <<: *ikun}  
+
+  - {name: 彦祖分享-广州移动, server: 183.240.98.84, headers: {Host: cloudnproxy.baidu.com:彦祖免流, X-T5-Auth: 1050504963}, <<: *id24407}
+  - {name: 彦祖分享-南京移动, server: 36.155.169.188, headers: {Host: cloudnproxy.baidu.com:彦祖免流, X-T5-Auth: 1050504963}, <<: *id24407}
+  - {name: 彦祖分享-南京电信, server: 180.101.50.249, headers: {Host: cloudnproxy.baidu.com:彦祖免流, X-T5-Auth: 1050504963}, <<: *id24407}
+  - {name: 彦祖分享-江苏电信, server: 180.101.50.208, headers: {Host: cloudnproxy.baidu.com:彦祖免流, X-T5-Auth: 1050504963}, <<: *id24407}
+  - {name: 彦祖分享-北京电信, server: 220.181.111.189, headers: {Host: cloudnproxy.baidu.com:彦祖免流, X-T5-Auth: 1050504963}, <<: *id24407}
+  - {name: 彦祖分享-广州电信, server: 14.215.182.75, headers: {Host: cloudnproxy.baidu.com:彦祖免流, X-T5-Auth: 1050504963}, <<: *id24407}
+  - {name: 彦祖分享-南京联通, server: 153.3.237.117, headers: {Host: cloudnproxy.baidu.com:彦祖免流, X-T5-Auth: 1050504963}, <<: *id24407}
+  - {name: 彦祖分享-苏州联通, server: 157.0.146.158, headers: {Host: cloudnproxy.baidu.com:彦祖免流, X-T5-Auth: 1050504963}, <<: *id24407}
+  - {name: 彦祖分享-保定联通, server: 110.242.70.68, headers: {Host: cloudnproxy.baidu.com:彦祖免流, X-T5-Auth: 1050504963}, <<: *id24407}
+  - {name: 彦祖分享-域名随缘, server: cloudnproxy.baidu.com, headers: {Host: cloudnproxy.baidu.com:彦祖免流, X-T5-Auth: 1050504963}, <<: *id24407}
+    
+  # 以下两个节点已失效，保留但不会被使用
+  - {name: 彦祖分享-三网优选, server: id24407.cf.090227.xyz, port: 443, client-fingerprint: random, type: vless, uuid: 550e8400-e29b-41d4-a716-446655440000, tls: true, tfo: false, skip-cert-verify: false, servername: kun.singbox.ggff.net, network: ws, ws-opts: {path: "/?ed=2560", headers: {Host: kun.singbox.ggff.net}}, <<: *ikun}    
+  - {name: 彦祖分享-大厂优选, server: icook.hk, port: 443, client-fingerprint: random, type: vless, uuid: 550e8400-e29b-41d4-a716-446655440000, tls: true, tfo: false, skip-cert-verify: false, servername: kun.singbox.ggff.net, network: ws, ws-opts: {path: "/?ed=2560", headers: {Host: kun.singbox.ggff.net}}, <<: *ikun}  
+
+# 代理组
+proxy-groups:
+  - {name: "国内选择", type: select, proxies: [百度直连], url: 'http://www.qualcomm.cn/generate_204', interval: 24407, icon: 'https://ghfast.top/https://raw.githubusercontent.com/NB921/picture/main/China.png'}
+  - {name: "百度直连", <<: *baidu, icon: 'https://ghfast.top/https://raw.githubusercontent.com/NB921/picture/main/Battle.png'}
+  
+  # UDP处理：优先使用订阅节点（可能支持UDP），其次百度直连、拦截、直连（风险）
+  - {name: "UDP处理", type: select, proxies: [百度直连, 流量拦截, 流量直连], icon: 'https://ghfast.top/https://raw.githubusercontent.com/NB921/picture/main/hammer.png'}
+  
+  - {name: "端口受限", type: load-balance, proxies: [], use: [my_sub], url: 'https://www.gstatic.com/generate_204', interval: 300, lazy: true, strategy: consistent-hashing, icon: 'https://ghfast.top/https://raw.githubusercontent.com/NB921/picture/main/drive.png'}
+  
+  - {name: "节点选择", type: select, proxies: [], use: [my_sub], icon: 'https://ghfast.top/https://raw.githubusercontent.com/NB921/picture/main/coinspot.png'}
+  - {name: "故障转移", type: fallback, proxies: [], use: [my_sub], url: 'https://www.gstatic.com/generate_204', interval: 300, icon: 'https://ghfast.top/https://raw.githubusercontent.com/NB921/picture/main/Health.png'}
+  
+  - {name: "国外选择", type: select, proxies: [节点选择, 故障转移], icon: 'https://ghfast.top/https://raw.githubusercontent.com/NB921/picture/main/Golbal.png'}
+  
+  - {name: "漏网之鱼", type: select, proxies: [国内选择], icon: 'https://ghfast.top/https://raw.githubusercontent.com/NB921/picture/main/Yu.png'}      
+
+# 规则：强制 DNS 走 UDP处理，UDP 规则紧随其后
+rules:
+  - RULE-SET,private_ip,流量直连,no-resolve
+  - DST-PORT,53,UDP处理                     # 精确捕获 DNS
+  - NETWORK,UDP,UDP处理
+  - DOMAIN-KEYWORD,xn--ngstr-lra8j.com,国内选择
+  - DOMAIN-KEYWORD,services.googleapis.cn,国内选择
+  - AND,((NETWORK,TCP),(DST-PORT,446/30443),(RULE-SET,cn_domain)),端口受限
+  - AND,((NETWORK,TCP),(DST-PORT,446/30443),(RULE-SET,cn_ip)),端口受限  
+  - RULE-SET,twitter_domain,国外选择
+  - RULE-SET,youtube_domain,国外选择
+  - RULE-SET,google_domain,国外选择
+  - RULE-SET,telegram_domain,国外选择
+  - RULE-SET,google_ip,国外选择,no-resolve
+  - RULE-SET,netflix_ip,国外选择,no-resolve
+  - RULE-SET,telegram_ip,国外选择,no-resolve
+  - RULE-SET,twitter_ip,国外选择,no-resolve
+  - RULE-SET,geolocation-!cn,国外选择
+  - RULE-SET,cn_domain,国内选择
+  - RULE-SET,cn_ip,国内选择,no-resolve
+  - MATCH,漏网之鱼
+
+# 规则提供者
+rule-anchor:
+  ip: &ip {type: http, interval: 86400, behavior: ipcidr, format: mrs, dialer-proxy: "百度直连"}
+  domain: &domain {type: http, interval: 86400, behavior: domain, format: mrs, dialer-proxy: "百度直连"}
+
+rule-providers:
+  private_domain: { <<: *domain, url: "https://ghfast.top/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/private.mrs" }
+  cn_domain: { <<: *domain, url: "https://ghfast.top/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/cn.mrs" }
+  twitter_domain: { <<: *domain, url: "https://ghfast.top/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/twitter.mrs" }
+  youtube_domain: { <<: *domain, url: "https://ghfast.top/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/youtube.mrs" }
+  google_domain: { <<: *domain, url: "https://ghfast.top/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/google.mrs" }
+  telegram_domain: { <<: *domain, url: "https://ghfast.top/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/telegram.mrs" }
+  netflix_domain: { <<: *domain, url: "https://ghfast.top/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/netflix.mrs" }
+  geolocation-!cn: { <<: *domain, url: "https://ghfast.top/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/geolocation-!cn.mrs" }
+  private_ip: { <<: *ip, url: "https://ghfast.top/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/private.mrs" }
+  cn_ip: { <<: *ip, url: "https://ghfast.top/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/cn.mrs" }
+  google_ip: { <<: *ip, url: "https://ghfast.top/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/google.mrs" }
+  netflix_ip: { <<: *ip, url: "https://ghfast.top/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/netflix.mrs" }
+  twitter_ip: { <<: *ip, url: "https://ghfast.top/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/twitter.mrs" }
+  telegram_ip: { <<: *ip, url: "https://ghfast.top/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/telegram.mrs" }
